@@ -53,11 +53,16 @@ CHANNEL_URL = "https://t.me/ky_digital_equb_channel"
 # የአድሚን Telegram User ID
 ADMIN_CHAT_ID = 883306072
 
+# የተመዘገቡ ተጠቃሚዎችን ID መያዣ (In-Memory Database)
+registered_users = set()
+
 # የውይይት ደረጃዎች
 FULL_NAME, PHONE, DORM, ID_PHOTO, RECEIPT_PHOTO = range(5)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+  user_id = update.effective_user.id
+  registered_users.add(user_id)  # ተጠቃሚውን ለሪማይንደር መዝግብ
   user_name = update.effective_user.first_name
 
   # የፈጣን ሊንክ ክትትል (/start ref_XXXXXX)
@@ -65,13 +70,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   if args and args[0].startswith("ref_"):
     referrer_id = args[0].split("_")[1]
     context.user_data["referrer_id"] = referrer_id
-    logging.info(
-        f"User {update.effective_user.id} came via referrer {referrer_id}"
-    )
+    logging.info(f"User {user_id} came via referrer {referrer_id}")
 
   keyboard = [
       [KeyboardButton("📝 በዕቁብ መመዝገብ")],
-      [KeyboardButton("📊 የዕቁብ ስንጠርና & አጣ")],
+      [KeyboardButton("📊 የዕቁብ ሠንጠረዥ & ዕጣ")],
       [KeyboardButton("🔗 የሼር ሊንክ")],
       [KeyboardButton("💰 የብድር አገልግሎት")],
       [KeyboardButton("💳 ክፍያ ማስታወቂያ / ሪፖርት")],
@@ -81,15 +84,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   welcome_text = (
       f"ሰላም <b>{user_name}</b>! ✨\n\n"
       f"🏦 የተማሪዎችን ህይወት የሚያቃልል፡ አስተማማኝና"
-      f" ፈጣን የደጁዕ ዕቁብ እና የብድር አገልግሎት::\n"
+      f" ፈጣን የዲጂታል ዕቁብ እና የብድር አገልግሎት::\n"
       f"──────────────── 🌟 <b>ልዩ ጥቅሞች</b> 🌟"
       f"────────────────\n"
-      f"◆ <b>የዕቁብ ድን፦</b> ቀደም 5 ሰው ላመጣኘ"
-      f" የ 500 ብር / የ 2% ቅናሽ ሙሉለ ሙሉ ይሰጣል!\n"
+      f"◆ <b>የዕቁብ ሽልማት፦</b> ቀድሞ 5 ሰው ላመጣ"
+      f" የ 500 ብር / የ 2% ቅናሽ ሙሉ ለሙሉ ይሰጣል!\n"
       f"◆ <b>የብድር አገልግሎት፦</b> እስከ 20,000 ብር"
       f" የሚደርስ የብድር አገልግሎት\n"
-      f"◆ <b>ግልፅ አሰራር፦</b> የቀጥታ (Live) አጣ"
-      f" ማውጫ እና የስንጠርና ክትትል\n"
+      f"◆ <b>ግልጽ አሰራር፦</b> የቀጥታ (Live) ዕጣ"
+      f" ማውጫ እና የሠንጠረዥ ክትትል\n\n"
       f"👇 <b>ለመጀመር ከዚህ በታች ካሉ አማራጮች አንዱን"
       f" ይምረጡ፦</b>"
   )
@@ -103,33 +106,35 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def start_registration(update: Update, context: ContextTypes.DEFAULT_TYPE):
-  await update.message.reply_text(
-      "👤 አዎህን ሙሉ ስምዎን ያስገቡ:-"
-  )
+  await update.message.reply_text("👤 እባክዎን ሙሉ ስምዎን ያስገቡ:-")
   return FULL_NAME
 
 
 async def get_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
   context.user_data["full_name"] = update.message.text
-  await update.message.reply_text("📱 አዎህን ስልክ ቁጥርዎን ያስገቡ:-")
+  await update.message.reply_text("📱 እባክዎን ስልክ ቁጥርዎን ያስገቡ:-")
   return PHONE
 
 
 async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
   context.user_data["phone"] = update.message.text
-  await update.message.reply_text("🏢 አዎህን ብሎክ እና የድሮም ቁጥርዎን ያስገቡ:-")
+  await update.message.reply_text(
+      "🏢 እባክዎን ብሎክ እና የዶርም ቁጥርዎን ያስገቡ:-"
+  )
   return DORM
 
 
 async def get_dorm(update: Update, context: ContextTypes.DEFAULT_TYPE):
   context.user_data["dorm"] = update.message.text
-  await update.message.reply_text("🆔 አዎህን የዩኒቨርሲቲ መታወቂያ (Student ID) ፎቶ ይላኩ:-")
+  await update.message.reply_text(
+      "🆔 እባክዎን የዩኒቨርሲቲ መታወቂያ (Student ID) ፎቶ ይላኩ:-"
+  )
   return ID_PHOTO
 
 
 async def get_id_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
   if not update.message.photo:
-    await update.message.reply_text("⚠️ አዎህን የመታወቂያዎን ፎቶ ይላኩ!")
+    await update.message.reply_text("⚠️ እባክዎን የመታወቂያዎን ፎቶ ይላኩ!")
     return ID_PHOTO
 
   context.user_data["id_photo"] = update.message.photo[-1].file_id
@@ -138,15 +143,15 @@ async def get_id_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
       "ወደ KY Digital Equb አባላት ለመቀላቀል የሚከተሉትን"
       " ክፍያዎች ይፈፅሙ:-\n\n"
       "💳 <b>የሚከፈል ክፍያ:</b>\n"
-      "• አንዴ ጊዜ የመመዝገቢያ ክፍያ: 50 ብር\n"
-      "• የመጀመሪያው ሳምንት እቁብ ክፍያ: [50 - 100 ብር]\n\n"
+      "• የአንድ ጊዜ የመመዝገቢያ ክፍያ: 50 ብር\n"
+      "• የመጀመሪያው ሳምንት ዕቁብ ክፍያ: [50 - 100 ብር]\n\n"
       "📌 <b>መክፈል ያለብዎት:</b> የመመዝገቢያ"
-      " (50 ብር) + የእቁብ ክፍያ\n"
+      " (50 ብር) + የዕቁብ ክፍያ\n"
       "• 📲 <b>Telebirr:</b> <code>0985625604</code> (Kaleab Haile W/Abrha)\n"
       "• 🏦 <b>CBE (ንግድ ባንክ):</b>"
       " <code>1000657786342</code> (Kaleab Haile W/Abrha)\n\n"
-      " ክፍያውን ከፈፀሙ በኋላ ከታች ያለውን '💳 ክፍያ"
-      " ማስታወቂያ / ሪፖርት' ቁልፍ በመንካት የትራንዛክሽኑን ሩት/ደረሰኝ"
+      "ክፍያውን ከፈፀሙ በኋላ ከታች ያለውን '💳 ክፍያ"
+      " ማስታወቂያ / ሪፖርት' ቁልፍ በመንካት የትራንዛክሽኑን ደረሰኝ"
       " ይላኩ!"
   )
 
@@ -159,14 +164,14 @@ async def get_id_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def start_payment_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
   await update.message.reply_text(
-      "📸 አዎህን የክፍያውን የተራንዛክሽን ሩት/ደረሰኝ ይላኩ:-"
+      "📸 እባክዎን የክፍያውን የትራንዛክሽን ደረሰኝ ፎቶ ይላኩ:-"
   )
   return RECEIPT_PHOTO
 
 
 async def process_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
   if not update.message.photo:
-    await update.message.reply_text("⚠️ አዎህን ደረሰኝዎን በፎቶ መልክ ይላኩ!")
+    await update.message.reply_text("⚠️ እባክዎን ደረሰኝዎን በፎቶ መልክ ይላኩ!")
     return RECEIPT_PHOTO
 
   receipt_photo_id = update.message.photo[-1].file_id
@@ -175,26 +180,26 @@ async def process_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
   full_name = context.user_data.get("full_name", "አልተገለጸም")
   phone = context.user_data.get("phone", "አልተገለጸም")
   dorm = context.user_data.get("dorm", "አልተገለጸም")
-  referrer = context.user_data.get("referrer_id", "በቀጥታ የመጣ (ሰፈራ የለውም)")
+  referrer = context.user_data.get("referrer_id", "በቀጥታ የመጣ (ሪፈራል የለውም)")
 
   admin_msg = (
-      f"📥 <b>አዲስ የምዝገባ እና የክፍያ መልእክት!</b>\n\n"
+      f"📥 <b>አዲስ የምዝገባ እና የክፍያ ማመልከቻ!</b>\n\n"
       f"👤 <b>ስም:</b> {full_name}\n"
       f"📱 <b>ስልክ:</b> {phone}\n"
-      f"🏢 <b>ብሎክ/ድሮም:</b> {dorm}\n"
+      f"🏢 <b>ብሎክ/ዶርም:</b> {dorm}\n"
       f"🆔 <b>User ID:</b> <code>{user.id}</code>\n"
       f"👤 <b>Telegram:</b> @{user.username if user.username else 'የለውም'}\n"
-      f"🔗 <b>የየነሆ ሰው (Referrer ID):</b>"
+      f"🔗 <b>የጋበዘው ሰው (Referrer ID):</b>"
       f" <code>{referrer}</code>"
   )
 
   keyboard = [
       [
           InlineKeyboardButton(
-              "✅ Approve (አፀድቅ)", callback_data=f"approve_{user.id}"
+              "✅ አጽድቅ (Approve)", callback_data=f"approve_{user.id}"
           ),
           InlineKeyboardButton(
-              "❌ Reject (አጥፍ)", callback_data=f"reject_{user.id}"
+              "❌ አትቀበል (Reject)", callback_data=f"reject_{user.id}"
           ),
       ]
   ]
@@ -212,8 +217,8 @@ async def process_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.error(f"Failed to send to admin: {e}")
 
   await update.message.reply_text(
-      "⏳ <b>መረጃ እና ክፍያ ተቀብለናል! (Pending)</b>\n\n"
-      "በአድሚን ተመርምሮ እስኪረጋገጥ በፅዕነት ይጠብቁ!",
+      "⏳ <b>መረጃዎ እና የክፍያ ደረሰኝዎ ተቀብለናል! (Pending)</b>\n\n"
+      "በአድሚን ተመርምሮ እስኪረጋገጥ በትዕግስት ይጠብቁ!",
       parse_mode="HTML",
   )
   return ConversationHandler.END
@@ -237,28 +242,28 @@ async def handle_admin_approval(
 
   if action == "approve":
     success_text = (
-        "🎉 <b>እንኳን ደስ አለዎት!</b> አሁን ሙሉ ሙሉ የ"
-        " <b>KY Digital Equb</b> አባል መ되ዋል::\n"
-        f"🎲 <b>የዕቁብ Live አጣ ማውጫ ገፅ:-</b>\n{WEBAPP_URL}\n"
-        f"📢 <b>የየተማሩም ቻናላችን:-</b>\n{CHANNEL_URL}\n"
-        f"🔗 <b>የእርስዎ ልዩ ሼር ሊንክ:-</b>\n<code>{ref_link}</code>\n"
-        "📌 በስርጭ 5 ሰው የሚመዘግቡበትን ሊንክ '🔗 ሼር'"
-        " button በመንካት ስልዎትን የመመዝገቢያ ሊንክ ያግኙ!"
+        "🎉 <b>እንኳን ደስ አለዎት!</b> አሁን ሙሉ ለሙሉ የ"
+        " <b>KY Digital Equb</b> አባል ሆነዋል::\n\n"
+        f"🎲 <b>የዕቁብ Live ዕጣ ማውጫ ገፅ:-</b>\n{WEBAPP_URL}\n\n"
+        f"📢 <b>የቴሌግራም ቻናላችን:-</b>\n{CHANNEL_URL}\n\n"
+        f"🔗 <b>የእርስዎ ልዩ የሼር ሊንክ:-</b>\n<code>{ref_link}</code>\n\n"
+        "📌 ይህንን ሊንክ ለ 5 ሰው በማጋራትና በመጋበዝ የ 500 ብር"
+        " ወይም የ 2% ቅናሽ ያግኙ!"
     )
     await context.bot.send_message(
         chat_id=target_user_id, text=success_text, parse_mode="HTML"
     )
     await query.edit_message_caption(
-        caption=query.message.caption + "\n\n✅ <b>ተፅዷል (Approved)!</b>",
+        caption=query.message.caption + "\n\n✅ <b>ጸድቋል (Approved)!</b>",
         parse_mode="HTML",
     )
 
   elif action == "reject":
     reject_text = (
         "❌ <b>ይቅርታ!</b> የክፍያ ወይም የምዝገባ"
-        " መረጃ በአድሚን አልፀደቀም::\n"
-        "አዎህን መረጃውን አሰተካክለው እንደገና ይላኩ ወይም"
-        " አድሚንን ያነጋገሩ:- @KY_market_admin"
+        " መረጃዎ በአድሚን አልፀደቀም::\n\n"
+        "እባክዎን መረጃውን አስተካክለው እንደገና ይላኩ ወይም"
+        " አድሚንን ያነጋግሩ:- @KY_market_admin"
     )
     await context.bot.send_message(
         chat_id=target_user_id, text=reject_text, parse_mode="HTML"
@@ -269,46 +274,78 @@ async def handle_admin_approval(
     )
 
 
+# --- የአድሚን የብሮድካስት ማሳሰቢያ (Reminder) ---
+
+
+async def send_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+  if update.effective_user.id != ADMIN_CHAT_ID:
+    await update.message.reply_text("⛔ ይህ ትዕዛዝ ለአድሚን ብቻ የተፈቀደ ነው!")
+    return
+
+  reminder_msg = (
+      "⚠️ <b>የክፍያ ማሳሰቢያ!</b>\n\n"
+      "የመክፈያ ጊዜው እስከ ማታ 3:00 ሰዓት ድረስ ብቻ ስለሆነ"
+      " እባክዎን ክፍያዎን በጊዜ ይፈፅሙ!\n\n"
+      "ክፍያውን እንደፈጸሙ የትራንዛክሽን ደረሰኝዎን ከታች ባለው"
+      " '💳 ክፍያ ማስታወቂያ / ሪፖርት' ቁልፍ በመጫን ይላኩ።"
+  )
+
+  success_count = 0
+  for uid in registered_users:
+    try:
+      await context.bot.send_message(
+          chat_id=uid, text=reminder_msg, parse_mode="HTML"
+      )
+      success_count += 1
+    except Exception as e:
+      logging.error(f"Could not send reminder to {uid}: {e}")
+
+  await update.message.reply_text(
+      f"✅ ማሳሰቢያው ለ {success_count} ተጠቃሚዎች በስኬት ተላክ!"
+  )
+
+
 # --- አጠቃላይ አክሰሶች ---
 
 
 async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
   text = update.message.text
+  registered_users.add(update.effective_user.id)
 
-  if text == "📊 የዕቁብ ስንጠርና & አጣ":
+  if text == "📊 የዕቁብ ሠንጠረዥ & ዕጣ":
     inline_keyboard = [
-        [InlineKeyboardButton("🌐 የዕቁብ ቅንይት ክፈት (Live)", url=WEBAPP_URL)]
+        [InlineKeyboardButton("🌐 የዕቁብ ዌብሳይት ክፈት (Live)", url=WEBAPP_URL)]
     ]
     reply_markup = InlineKeyboardMarkup(inline_keyboard)
     await update.message.reply_text(
-        "📊 <b>የቀጥታ (Live) የዕቁብ ስንጠርና እና አጣ"
+        "📊 <b>የቀጥታ (Live) የዕቁብ ሠንጠረዥ እና ዕጣ"
         " ማውጫ ገፅ:</b>\n\n"
-        "ከዚህ በታች ባለው ሊንክ በመግባት ቀኑን መከታተል እና አጣ"
+        "ከዚህ በታች ባለው ሊንክ በመግባት ሂደቱን መከታተል እና ዕጣ"
         " መመልከት ይችላሉ!",
         parse_mode="HTML",
         reply_markup=reply_markup,
     )
 
-  elif text == "🔗 ሼር ሊንክ":
+  elif text == "🔗 የሼር ሊንክ":
     bot_username = (await context.bot.get_me()).username
     user_id = update.effective_user.id
     referral_link = f"https://t.me/{bot_username}?start=ref_{user_id}"
 
     ref_text = (
-        f"🔗 <b>የእርስዎ ልዩ ሼር ሊንክ:</b>\n"
-        f"<code>{referral_link}</code>\n"
-        f"📌 ቀደምሙ 5 ሰው በመጋበዝ የ 500 ብር / የ"
-        f" 2% ቅናሽ ሙሉ ሙሉ ነፃ ይድርግ!"
+        f"🔗 <b>የእርስዎ ልዩ የሼር ሊንክ:</b>\n"
+        f"<code>{referral_link}</code>\n\n"
+        f"📌 ቀድመው 5 ሰው በመጋበዝ የ 500 ብር / የ"
+        f" 2% ቅናሽ ተጠቃሚ ይሁኑ!"
     )
     await update.message.reply_text(ref_text, parse_mode="HTML")
 
   elif text == "💰 የብድር አገልግሎት":
     loan_text = (
-        f"💰 <b>የብድር አገልግሎት መመሪያ:</b>\n"
+        f"💰 <b>የብድር አገልግሎት መመሪያ:</b>\n\n"
         f"• ለዕቁብ አባላት ብቻ እስከ 20,000 ብር የሚደርስ"
-        f" ብር እንሰጣለን::\n"
+        f" ብድር እንሰጣለን::\n"
         f"• ጥያቄ ለማቅረብ አድሚናችንን ማነጋገር ይቻላል::\n"
-        f"እድሚን: @KY_market_admin"
+        f"አድሚን: @KY_market_admin"
     )
     await update.message.reply_text(loan_text, parse_mode="HTML")
 
@@ -342,6 +379,7 @@ def main():
   )
 
   application.add_handler(CommandHandler("start", start))
+  application.add_handler(CommandHandler("remind", send_reminder))  # ማሳሰቢያ መላኪያ
   application.add_handler(reg_handler)
   application.add_handler(pay_handler)
   application.add_handler(

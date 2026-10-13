@@ -53,7 +53,8 @@ CHANNEL_URL = 'https://t.me/ky_digital_equb_channel'
 # የአድሚን Telegram User ID
 ADMIN_CHAT_ID = 883306072
 
-# የተመዘገቡ ተጠቃሚዎችን ID መያዣ
+# የጸደቁ (Approved) አባላት እና የተመዘገቡ ተጠቃሚዎች ዝርዝር
+approved_users = set()
 registered_users = set()
 
 # የውይይት ደረጃዎች
@@ -69,7 +70,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   if args and args[0].startswith('ref_'):
     referrer_id = args[0].split('_')[1]
     context.user_data['referrer_id'] = referrer_id
-    logging.info(f'User {user_id} came via referrer {referrer_id}')
 
   keyboard = [
       [KeyboardButton('📝 በዕቁብ መመዝገብ')],
@@ -199,15 +199,17 @@ async def process_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
   keyboard = [
       [
           InlineKeyboardButton(
-              '✅ አጽድቅ (Approve)', callback_data=f'approve_{user.id}'
+              '✅ Approve (አጽድቅ)', callback_data=f'approve_{user.id}'
           ),
           InlineKeyboardButton(
-              '❌ አትቀበል (Reject)', callback_data=f'reject_{user.id}'
+              '❌ Reject (አታጽድቅ)', callback_data=f'reject_{user.id}'
           ),
       ]
   ]
   reply_markup = InlineKeyboardMarkup(keyboard)
 
+  # ለአድሚን የመላክ ሙከራ
+  sent_to_admin = False
   try:
     await context.bot.send_photo(
         chat_id=ADMIN_CHAT_ID,
@@ -216,6 +218,7 @@ async def process_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode='HTML',
         reply_markup=reply_markup,
     )
+    sent_to_admin = True
   except Exception as e:
     logging.error(f'Failed to send photo to admin: {e}')
     try:
@@ -225,14 +228,22 @@ async def process_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
           parse_mode='HTML',
           reply_markup=reply_markup,
       )
+      sent_to_admin = True
     except Exception as ex:
       logging.error(f'Failed to send text to admin: {ex}')
 
-  await update.message.reply_text(
-      '⏳ <b>መረጃዎ እና የክፍያ ደረሰኝዎ ተቀብለናል! (Pending)</b>\n\n'
-      'በአድሚን ተመርምሮ እስኪረጋገጥ በትዕግስት ይጠብቁ!',
-      parse_mode='HTML',
-  )
+  if sent_to_admin:
+    await update.message.reply_text(
+        '⏳ <b>መረጃዎ እና የክፍያ ደረሰኝዎ ተቀብለናል! (Pending)</b>\n\n'
+        'በአድሚን ተመርምሮ እስኪረጋገጥ በትዕግስት ይጠብቁ!',
+        parse_mode='HTML',
+    )
+  else:
+    await update.message.reply_text(
+        '⚠️ <b>ማሳሰቢያ፦</b> መረጃዎ ተመዝግቧል ነገር ግን ከአድሚን ቦት ጋር ገና'
+        ' አልተገናኘም። እባክዎን አድሚኑን በቀጥታ ያነጋግሩ፦ @KY_market_admin'
+    )
+
   return ConversationHandler.END
 
 
@@ -253,6 +264,8 @@ async def handle_admin_approval(
   ref_link = f'https://t.me/{bot_username}?start=ref_{target_user_id}'
 
   if action == 'approve':
+    approved_users.add(target_user_id)  # ተጠቃሚውን የጸደቁ አባላት ዝርዝር ውስጥ መጨመር
+
     success_text = (
         '🎉 <b>እንኳን ደስ አለዎት!</b> አሁን ሙሉ ለሙሉ የ'
         ' <b>KY Digital Equb</b> አባል ሆነዋል::\n\n'
@@ -271,6 +284,9 @@ async def handle_admin_approval(
     )
 
   elif action == 'reject':
+    if target_user_id in approved_users:
+      approved_users.remove(target_user_id)
+
     reject_text = (
         '❌ <b>ይቅርታ!</b> የክፍያ ወይም የምዝገባ'
         ' መረጃዎ በአድሚን አልፀደቀም::\n\n'
@@ -317,12 +333,33 @@ async def send_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
   )
 
 
-# --- አጠቃላይ አክሰሶች ---
+# --- አጠቃላይ ቁልፎች እና የመዳረሻ ገደብ ---
 
 
 async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
   text = update.message.text
-  registered_users.add(update.effective_user.id)
+  user_id = update.effective_user.id
+  registered_users.add(user_id)
+
+  # ያልጸደቁ ተጠቃሚዎች ገደብ
+  if (
+      text
+      in [
+          '📊 የዕቁብ ሠንጠረዥ & ዕጣ',
+          '🔗 የሼር ሊንክ',
+          '💰 የብድር አገልግሎት',
+      ]
+      and user_id not in approved_users
+  ):
+    not_approved_text = (
+        '⏳ <b>አካውንትዎ ገና አልጸደቀም!</b>\n\n'
+        'ምዝገባዎ እና የክፍያ ደረሰኝዎ በአድሚን ተመርምሮ እስኪጸድቅ'
+        ' ድረስ እነዚህን አገልግሎቶች መጠቀም አይችሉም::\n'
+        'እባክዎን በትዕግስት ይጠብቁ ወይም አድሚኑን ያነጋግሩ፦'
+        ' @KY_market_admin'
+    )
+    await update.message.reply_text(not_approved_text, parse_mode='HTML')
+    return
 
   if text == '📊 የዕቁብ ሠንጠረዥ & ዕጣ':
     inline_keyboard = [
@@ -340,7 +377,6 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
   elif text == '🔗 የሼር ሊንክ':
     bot_username = (await context.bot.get_me()).username
-    user_id = update.effective_user.id
     referral_link = f'https://t.me/{bot_username}?start=ref_{user_id}'
 
     ref_text = (

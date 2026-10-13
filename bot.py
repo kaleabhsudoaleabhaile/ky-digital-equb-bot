@@ -50,7 +50,7 @@ TOKEN = '8993924043:AAHtYJM0TBJJm7wM1VAe4YdOvNPj6pNtc0o'
 WEBAPP_URL = 'https://ky-digital-equb-new.vercel.app'
 CHANNEL_URL = 'https://t.me/ky_digital_equb_channel'
 
-# የአድሚን Telegram User ID
+# የአድሚን Telegram User ID (እርግጠኛ integer ቁጥር)
 ADMIN_CHAT_ID = 883306072
 
 # የጸደቁ (Approved) አባላት እና የተመዘገቡ ተጠቃሚዎች ዝርዝር
@@ -208,7 +208,6 @@ async def process_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
   ]
   reply_markup = InlineKeyboardMarkup(keyboard)
 
-  # ለአድሚን የመላክ ሙከራ
   sent_to_admin = False
   try:
     await context.bot.send_photo(
@@ -240,8 +239,9 @@ async def process_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
   else:
     await update.message.reply_text(
-        '⚠️ <b>ማሳሰቢያ፦</b> መረጃዎ ተመዝግቧል ነገር ግን ከአድሚን ቦት ጋር ገና'
-        ' አልተገናኘም። እባክዎን አድሚኑን በቀጥታ ያነጋግሩ፦ @KY_market_admin'
+        '⚠️ <b>ማሳሰቢያ፦</b> መረጃዎ ተመዝግቧል፤ ነገር ግን ለአድሚኑ ማድረስ አልተቻለም።'
+        ' እባክዎን አድሚኑን በቀጥታ ያነጋግሩ፦ @KY_market_admin',
+        parse_mode='HTML',
     )
 
   return ConversationHandler.END
@@ -264,7 +264,7 @@ async def handle_admin_approval(
   ref_link = f'https://t.me/{bot_username}?start=ref_{target_user_id}'
 
   if action == 'approve':
-    approved_users.add(target_user_id)  # ተጠቃሚውን የጸደቁ አባላት ዝርዝር ውስጥ መጨመር
+    approved_users.add(target_user_id)
 
     success_text = (
         '🎉 <b>እንኳን ደስ አለዎት!</b> አሁን ሙሉ ለሙሉ የ'
@@ -341,7 +341,6 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
   user_id = update.effective_user.id
   registered_users.add(user_id)
 
-  # ያልጸደቁ ተጠቃሚዎች ገደብ
   if (
       text
       in [

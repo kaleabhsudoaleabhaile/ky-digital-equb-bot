@@ -209,6 +209,7 @@ async def process_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
   ]
   reply_markup = InlineKeyboardMarkup(keyboard)
 
+  # ለአድሚኑ መላኩን ማረጋገጥ
   try:
     await context.bot.send_photo(
         chat_id=ADMIN_CHAT_ID,
@@ -218,7 +219,17 @@ async def process_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup,
     )
   except Exception as e:
-    logging.error(f'Failed to send to admin: {e}')
+    logging.error(f'Failed to send photo to admin: {e}')
+    # ፎቶው መላክ ካልቻለ ጽሁፉን ብቻ ለመላክ መሞከር
+    try:
+      await context.bot.send_message(
+          chat_id=ADMIN_CHAT_ID,
+          text=f'⚠️ (የደረሰኝ ፎቶ መላክ አልተቻለም)\n\n{admin_msg}',
+          parse_mode='HTML',
+          reply_markup=reply_markup,
+      )
+    except Exception as ex:
+      logging.error(f'Failed to send text to admin: {ex}')
 
   await update.message.reply_text(
       '⏳ <b>መረጃዎ እና የክፍያ ደረሰኝዎ ተቀብለናል! (Pending)</b>\n\n'
@@ -252,7 +263,7 @@ async def handle_admin_approval(
         f'📢 <b>የቴሌግራም ቻናላችን:-</b>\n{CHANNEL_URL}\n\n'
         f'🔗 <b>የእርስዎ ልዩ የሼር ሊንክ:-</b>\n<code>{ref_link}</code>\n\n'
         '📌 ይህንን ሊንክ ለ 5 ሰው በማጋራትና በመጋበዝ የ 500 ብር'
-        ' ወይም የ 2% ቁርጫ ሙሉ ለሙሉ ይቀርልዎታል!'
+        ' ወይም የ 2% ቁርጫ ሙሉ ለሙሉ ይቅርብዎ!'
     )
     await context.bot.send_message(
         chat_id=target_user_id, text=success_text, parse_mode='HTML'

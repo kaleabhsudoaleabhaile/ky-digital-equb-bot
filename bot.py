@@ -65,7 +65,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   registered_users.add(user_id)
   user_name = update.effective_user.first_name
 
-  # የፈጣን ሊንክ ክትትል (/start ref_XXXXXX)
   args = context.args
   if args and args[0].startswith('ref_'):
     referrer_id = args[0].split('_')[1]
@@ -366,7 +365,6 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
   application = ApplicationBuilder().token(TOKEN).build()
 
-  # የምዝገባ ፍሰት አስተካክለናል
   reg_handler = ConversationHandler(
       entry_points=[
           MessageHandler(

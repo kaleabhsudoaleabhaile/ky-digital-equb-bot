@@ -50,8 +50,8 @@ TOKEN = '8993924043:AAHtYJM0TBJJm7wM1VAe4YdOvNPj6pNtc0o'
 WEBAPP_URL = 'https://ky-digital-equb-new.vercel.app'
 CHANNEL_URL = 'https://t.me/ky_digital_equb_channel'
 
-# የአድሚን Telegram User ID (እርግጠኛ integer ቁጥር)
-ADMIN_CHAT_ID = 883306072
+# የአድሚን Telegram User ID (ትክክለኛው ቁጥር ከ 6 ጋር)
+ADMIN_CHAT_ID = 8833060672
 
 # የጸደቁ (Approved) አባላት እና የተመዘገቡ ተጠቃሚዎች ዝርዝር
 approved_users = set()
@@ -426,7 +426,6 @@ def main():
       ],
       states={RECEIPT_PHOTO: [MessageHandler(filters.PHOTO, process_receipt)]},
       fallbacks=[],
-      allow_reentry=True,
   )
 
   application.add_handler(CommandHandler('start', start))

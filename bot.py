@@ -209,7 +209,6 @@ async def process_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
   ]
   reply_markup = InlineKeyboardMarkup(keyboard)
 
-  # ለአድሚኑ መላኩን ማረጋገጥ
   try:
     await context.bot.send_photo(
         chat_id=ADMIN_CHAT_ID,
@@ -220,7 +219,6 @@ async def process_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
   except Exception as e:
     logging.error(f'Failed to send photo to admin: {e}')
-    # ፎቶው መላክ ካልቻለ ጽሁፉን ብቻ ለመላክ መሞከር
     try:
       await context.bot.send_message(
           chat_id=ADMIN_CHAT_ID,
@@ -368,6 +366,7 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
   application = ApplicationBuilder().token(TOKEN).build()
 
+  # የምዝገባ ፍሰት አስተካክለናል
   reg_handler = ConversationHandler(
       entry_points=[
           MessageHandler(
@@ -383,6 +382,7 @@ def main():
           ID_PHOTO: [MessageHandler(filters.PHOTO, get_id_photo)],
       },
       fallbacks=[],
+      allow_reentry=True,
   )
 
   pay_handler = ConversationHandler(
@@ -393,6 +393,7 @@ def main():
       ],
       states={RECEIPT_PHOTO: [MessageHandler(filters.PHOTO, process_receipt)]},
       fallbacks=[],
+      allow_reentry=True,
   )
 
   application.add_handler(CommandHandler('start', start))
